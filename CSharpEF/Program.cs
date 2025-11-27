@@ -1,80 +1,90 @@
-﻿// See https://aka.ms/new-console-template for more information
-// ADO.NET (Active Data Objects for .NET)
-// Con ADO.NET interagiamo col DB attraverso istruzioni SQL
+﻿// MIGRAZIONI
 
-using Microsoft.Data.SqlClient;
-using System.Data;
+// creare migrazione
+// dotnet ef migrations add InitialCreate --context BlogContext
 
-var connectionString = @"Server=(localdb)\MSSQLLocalDB;Database=CSharpEF2;Integrated Security=true;";
+// rimuovere ultima migrazione
+// dotnet ef migrations remove
 
-// CONNESSIONE AL DB
-using SqlConnection connection = new(connectionString);
-SqlCommand cmd = connection.CreateCommand();
+// applichiamo la migrazione: aggiorniamo il database
+// dotnet ef database update
 
-try
+// riporta il DB allo stato iniziale, cioè senza migrazioni
+// dotnet ef database update 0
+
+using CSharpEF;
+using CSharpEF.Models;
+
+#region Popolamento DB con dati di test
+void PopulateDB()
 {
-	connection.Open();
-
-    // scalar 
-    cmd.CommandText = "SELECT COUNT(*) as count FROM Todos";
-    var count = cmd.ExecuteScalar();
-
-    Console.WriteLine($"Numero Todos: {count}");
-
-    // where
-    int userId = 3;
-
-    cmd.CommandText = "SELECT COUNT(*) as count FROM Todos WHERE UtenteId = @UtenteId";
-    cmd.Parameters.AddWithValue("@UtenteId", userId);
-    count = cmd.ExecuteScalar();
-
-    Console.WriteLine($"Numero Todos utente {userId}: {count}");
-
-    //// insert
-    //cmd.CommandText = "INSERT INTO Todos (Testo, Completato, CategoriaId, UtenteId) VALUES (@Testo, 0, 2, @UtenteId)";
-    //cmd.Parameters.Clear();
-
-    //var testo = "30 Piegamenti";
-    //cmd.Parameters.AddWithValue("@Testo", testo);
-    //cmd.Parameters.AddWithValue("@UtenteId", userId);
-    //var result = cmd.ExecuteNonQuery();
-    //Console.WriteLine($"Risultato inserimento: {result}");
-
-    // reader
-    cmd.Parameters.Clear();
-    cmd.CommandText = @"
-                        SELECT t.Id, t.Testo, t.Completato, c.Nome AS Categoria, u.Nome AS Utente
-                        FROM Todos AS t
-                        INNER JOIN Utenti AS u ON t.UtenteId = u.Id
-                        INNER JOIN Categorie AS c ON t.CategoriaId = c.Id";
-
-    using (SqlDataReader reader = cmd.ExecuteReader())
+    using (var dc = new BlogContext())
     {
-        Console.WriteLine("Todos:");
-        while (reader.Read())
+        if (!dc.Utenti.Any())
         {
-            var id = reader[0];
-            var testo = reader[1];
-            var completato = reader[2];
-            var categoria = reader[3];
-            var utente = reader[4];
+            // inseriamo Utenti
+            var gigi = new Utente()
+            {
+                Nome = "Gigi Rossi"
+            };
+            var anna = new Utente();
+            anna.Nome = "Anna Bianchi";
 
-            Console.WriteLine($"Id: {id}, Testo: {testo}, Completato: {completato}, Categoria: {categoria}, Utente: {utente}");
+            // corrispettivo della INSERT
+            dc.Add(gigi);
+            dc.Add(anna);
+        }
+
+        if (!dc.Categorie.Any())
+        {
+            dc.Add(new Categoria() { Nome = "Cronoca" });
+            dc.Add(new Categoria() { Nome = "Attualità" });
+            dc.Add(new Categoria() { Nome = "Sport" });
+            dc.Add(new Categoria() { Nome = "Politica" });
+        }
+
+        if (!dc.Articoli.Any())
+        {
+            var autore = dc.Utenti.First();
+            var categoria = dc.Categorie.FirstOrDefault(x => x.Nome == "Politica");
+
+            if (categoria != null)
+            {
+                var a1 = new Articolo()
+                {
+                    Titolo = "Nuovo Presidente del Consiglio",
+                    Testo = "Bella e brava!",
+                    Autore = autore,
+                    Categoria = categoria
+                };
+                dc.Add(a1);
+            }            
+        }
+
+        try
+        {
+            var r = dc.SaveChanges(); // committa le modifiche sul DB
+            Console.WriteLine($"Entità aggiornate: {r}");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.InnerException?.Message);
+            Console.ResetColor();
         }
     }
-
-    // dataset
-    SqlDataAdapter adapter = new(cmd);
-    DataSet ds = new();
-    adapter.Fill(ds, "todos");
-
-    Console.WriteLine("Todos Dataset:");
-    foreach (DataRow t in ds.Tables["todos"]!.Rows)
-    {
-        Console.WriteLine($"Id: {t["Id"]}, Testo: {t["Testo"]}, Completato: {t["Completato"]}, Categoria: {t["Categoria"]}, Utente: {t["Utente"]}");
-    }
 }
-catch (Exception ex)
+
+PopulateDB();
+#endregion
+
+using (var dc = new BlogContext())
 {
-    Console.WriteLine(ex.Message);
+    var articolo = dc.Articoli.Single(x => x.Id == 3);
+    Console.WriteLine(articolo.Titolo);
+    Console.WriteLine(articolo.Testo);
+    Console.WriteLine($"Scritto da: {articolo.Autore!.Nome}"); // MANCA LO SPIEGONE
 }
+
+Console.WriteLine();
