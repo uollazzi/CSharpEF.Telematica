@@ -20,7 +20,7 @@ using CSharpEF.Models;
 using Microsoft.EntityFrameworkCore;
 
 #region Popolamento DB con dati di test
-void PopulateDB()
+static void PopulateDB()
 {
     using (var dc = new BlogContext())
     {
