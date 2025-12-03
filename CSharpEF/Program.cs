@@ -47,6 +47,19 @@ static void PopulateDB()
             dc.Add(new Categoria() { Nome = "Politica" });
         }
 
+        try
+        {
+            var r = dc.SaveChanges(); // committa le modifiche sul DB
+            Console.WriteLine($"Entità aggiornate: {r}");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.InnerException?.Message);
+            Console.ResetColor();
+        }
+
         if (!dc.Articoli.Any())
         {
             var autore = dc.Utenti.First();
