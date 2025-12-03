@@ -1,5 +1,8 @@
 ﻿// MIGRAZIONI
 
+// installazione tool ef
+// dotnet tool install --global dotnet-ef
+
 // creare migrazione
 // dotnet ef migrations add InitialCreate --context BlogContext
 
@@ -14,6 +17,7 @@
 
 using CSharpEF;
 using CSharpEF.Models;
+using Microsoft.EntityFrameworkCore;
 
 #region Popolamento DB con dati di test
 void PopulateDB()
@@ -32,7 +36,7 @@ void PopulateDB()
 
             // corrispettivo della INSERT
             dc.Add(gigi);
-            dc.Add(anna);
+            dc.Add(anna);            
         }
 
         if (!dc.Categorie.Any())
@@ -81,10 +85,25 @@ PopulateDB();
 
 using (var dc = new BlogContext())
 {
-    var articolo = dc.Articoli.Single(x => x.Id == 3);
+    var articolo = dc.Articoli
+        .Include(x => x.Autore)
+        .Include(x => x.Categoria)
+        .Single(x => x.Id == 3);
+
     Console.WriteLine(articolo.Titolo);
     Console.WriteLine(articolo.Testo);
-    Console.WriteLine($"Scritto da: {articolo.Autore!.Nome}"); // MANCA LO SPIEGONE
+    Console.WriteLine($"Scritto da: {articolo.Autore!.Nome}");
+    Console.WriteLine($"Categoria: {articolo.Categoria!.Nome}");
+
+    // preparazione della query
+    var articoli = dc.Articoli.Where(x => x.Autore!.Id == 2).OrderBy(o => o.Titolo);
+
+    // esecuzione
+    foreach (var a in articoli)
+    {
+        Console.WriteLine(a.Titolo);
+    }
+
 }
 
 Console.WriteLine();

@@ -33,7 +33,7 @@ public class BlogContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseLazyLoadingProxies().UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CSharpEF_Blog;Integrated Security=true;");
+            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CSharpEF_Blog;Integrated Security=true;");
         }
     }
 }
